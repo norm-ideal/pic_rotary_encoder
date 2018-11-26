@@ -79,10 +79,11 @@ MAIN
 	MOVLW   0FH		; 0000 1111	A0,A1=Encoder INPUT
 				;		A2 = Reset Encoder (NEG)
 	MOVWF   TRISA		; 		A3 = Shot (NEG)
-	MOVLW   02H		; 0000 0110
+				;
+	MOVLW   06H		; 0000 0110
 	MOVWF   TRISB		; 0000 011x
 
-; 	B2 = TxD, B1 = RxD (both should be INPUT)
+; 	B2 = TxD, B1 = RxD (both should be **INPUT** (ref. P.78))
 ;	Output drive, when required, is controlled by the peripheral circuitry.
 ;
 ; 	B7, B6 = rotation indicator
