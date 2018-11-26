@@ -66,9 +66,9 @@ SLEEPC	EQU	24H		; Sleep Counter
 LEDT1	EQU	25H		; LED Timer 1
 LEDT2	EQU	26H		; LED Timer 2
 LASTSW	EQU	27H		; LAST SWITCH STATE
-DIRC	EQU	28H		; DIRECTION COUNTER (*SIGNED* INT
-MOTDIR	EQU	29H		; MOTOR DIRECTION (1 = +, 255 = -)
-MOTSPD	EQU	2AH		; MOTOR SPEED (0-9)
+DIRC	EQU	28H		; DIRECTION COUNTER (*SIGNED* INT)
+MTRSPD	EQU	29H		; MOTOR SPEED (INT of 0-9)
+MTRCNT	EQU	2AH		; Motor Control xxxx xxab (ab=00 free, ab=11 break, ab=10/01 rotation)
 RTMPD	EQU	2BH		; Received data temporal storage
 
 MAIN
@@ -128,11 +128,11 @@ MAINLOOP
 ; CHECK DIRECTION COUNTER, IF NOT ZERO AND IF TXREADY, SEND ONE
 	; CHECK IF DIR COUNTER=0
 	MOVFW	DIRC		; DIRC->W, AFFECTS ZERO FLAG!!
-	BTFSC	STATUS, Z	; IF NOT ZERO, JUMP TO SEND DATA
-	GOTO	CHECKSTAT
+	BTFSC	STATUS, Z	; If dirc<>0, try to send one data. if not, skip the proc.
+	GOTO	END_OF_SEND
 
 	; CHECK IF TX-READY AND SKIP IF TX-BUSY (DO NOT SEND DATA IN THIS LOOP)
-	BSF	STATUS, RP0
+	BSF	STATUS, RP0	; **** SWITCH TO BANK1 ****
 	BTFSS	TXSTA, 1
 	GOTO	TXBUSY		; IMPORTANT: STILL IN BANK 1!!!!
 
@@ -146,27 +146,74 @@ SENDMINUS			; SEND B, INCREMENT DIR
 	MOVLW	'B'
 	MOVWF	TXREG
 	INCF	DIRC, F
-	GOTO	CHECKSTAT
+	GOTO	END_OF_SEND
 
 SENDPLUS			; SEND A, DECREMENT DIR
 	MOVLW	'A'
 	MOVWF	TXREG
 	DECF	DIRC, F
-	GOTO	CHECKSTAT
+	GOTO	END_OF_SEND
 TXBUSY
 	BCF	STATUS, RP0	; RETURN TO BANK 0.
 				; IMPORTANT: THERE IS A PATH TO REACH HERE ON BANK 1!!!!
+END_OF_SEND
 ; END CHECK DIRECTION COUNTER
 
-; RECEIVE DATA FROM SERIAL
-	BTFSS	PIR1, RCIF	; if data is ready, jump to receiving code. if not, jump to next block
-	GOTO	CHECKSTAT
-	MOVFW	RCREG
-	MOVWF	RTMPD
+
+; BEGIN RECEIVE DATA FROM SERIAL
+	BTFSS	PIR1, RCIF	; if data is ready, go on to receiving code. if not, jump to next block
+	GOTO	ENDOFRECEIVE
+	MOVFW	RCREG		; move the data
+	MOVWF	RTMPD		; to RTMPD
+
+	CLRF	MTRSPD		; if something is sent, clear the motorspeed
+
+; start the CHECK
+; candidates are "="(break), "+"(positive rot), "-"(negative rot), "[0-9]"(speed)
+	MOVLW	'='
+	XORWF	RTMPD, F
+	BTFSS	STATUS, Z	; skip when data = "=" (break)
+	GOTO	RCH_IFPLUS
+	BSF	MTRCNT, 0	; set bit0 = 1
+	BSF	MTRCNT, 1	; set bit1 = 1
+	GOTO	ENDOFRECEIVE
+
+RCH_IFPLUS
 	MOVLW	'+'
 	XORWF	RTMPD, F
-	BTFSC	STATUS, Z	; skip if received data <> '+'
-	; あとこの先を書く
+	BTFSS	STATUS, Z	; skip if received data = '+'
+	GOTO	RCH_IFMINUS
+	BCF	MTRCNT, 0	; set bit0 = 0
+	BSF	MTRCNT, 1	; set bit1 = 1
+	CLRF	MTRSPD		; clear the motor speed (avoid sudden reverse)
+	GOTO	ENDOFRECEIVE
+
+RCH_IFMINUS
+	MOVLW	'-'
+	XORWF	RTMPD, F
+	BTFSS	STATUS, Z	; skip if received data = '-'
+	GOTO	RCV_DIGIT
+	BSF	MTRCNT, 0	; set bit0 = 1
+	BCF	MTRCNT, 1	; set bit1 = 0
+	CLRF	MTRSPD		; clear the motor speed (avoid sudden reverse)
+	GOTO	ENDOFRECEIVE
+
+RCV_DIGIT
+	MOVLW	'0'
+	SUBWF	RTMPD, W	; W = ['0'-'9'] - '0'
+	MOVWF	MTRSPD		; set it to motor speed
+	IORWF	MTRSPD, W		; check if it is 0
+	BTFSC	STATUS, Z	; if it is 0
+	CLRF	MTRCNT		; set the motor free
+
+ENDOFRECEIVE
+
+; begin set motor
+
+; あとはここ書く
+
+
+ENDOFMOTORSET
 
 
 ; STATUS BUTTONS CHECK
