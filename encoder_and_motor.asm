@@ -68,7 +68,7 @@ LEDT2	EQU	26H		; LED Timer 2
 LASTSW	EQU	27H		; LAST SWITCH STATE
 DIRC	EQU	28H		; DIRECTION COUNTER (*SIGNED* INT)
 MTRSPD	EQU	29H		; MOTOR SPEED (INT of 0-9)
-MTRCNT	EQU	2AH		; Motor Control xxxx xxab (ab=00 free, ab=11 break, ab=10/01 rotation)
+MTRCNT	EQU	2AH		; Motor Control xxab xxxx (ab=00 free, ab=11 break, ab=10/01 rotation)
 RTMPD	EQU	2BH		; Received data temporal storage
 
 MAIN
@@ -174,8 +174,8 @@ END_OF_SEND
 	XORWF	RTMPD, F
 	BTFSS	STATUS, Z	; skip when data = "=" (break)
 	GOTO	RCH_IFPLUS
-	BSF	MTRCNT, 0	; set bit0 = 1
-	BSF	MTRCNT, 1	; set bit1 = 1
+	BSF	MTRCNT, 5	; set bit5 = 1
+	BSF	MTRCNT, 4	; set bit4 = 1
 	GOTO	ENDOFRECEIVE
 
 RCH_IFPLUS
@@ -183,8 +183,8 @@ RCH_IFPLUS
 	XORWF	RTMPD, F
 	BTFSS	STATUS, Z	; skip if received data = '+'
 	GOTO	RCH_IFMINUS
-	BCF	MTRCNT, 0	; set bit0 = 0
-	BSF	MTRCNT, 1	; set bit1 = 1
+	BCF	MTRCNT, 5	; set bit5 = 0
+	BSF	MTRCNT, 4	; set bit4 = 1
 	CLRF	MTRSPD		; clear the motor speed (avoid sudden reverse)
 	GOTO	ENDOFRECEIVE
 
@@ -193,8 +193,8 @@ RCH_IFMINUS
 	XORWF	RTMPD, F
 	BTFSS	STATUS, Z	; skip if received data = '-'
 	GOTO	RCV_DIGIT
-	BSF	MTRCNT, 0	; set bit0 = 1
-	BCF	MTRCNT, 1	; set bit1 = 0
+	BSF	MTRCNT, 5	; set bit5 = 1
+	BCF	MTRCNT, 4	; set bit4 = 0
 	CLRF	MTRSPD		; clear the motor speed (avoid sudden reverse)
 	GOTO	ENDOFRECEIVE
 
@@ -209,9 +209,10 @@ RCV_DIGIT
 ENDOFRECEIVE
 
 ; begin set motor
-
-; あとはここ書く
-
+	MOVFW	PORTB
+	ANDLW	b'11001111'
+	IORWF	MTRCNT, W
+	MOVWF	PORTB
 
 ENDOFMOTORSET
 
