@@ -58,6 +58,7 @@
 	ORG     0004H
 	RETFIE
 
+;	FIELDS (20H - 7FH for 648A)
 STATN   EQU     20H             ; State now	00 - 11
 STATM1  EQU     21H             ; State n-1	00 - 11
 STATC   EQU     22H             ; State Combined ST(n-1):ST(n) 0000 - 1111
@@ -70,6 +71,12 @@ DIRC	EQU	28H		; DIRECTION COUNTER (*SIGNED* INT)
 MTRSPD	EQU	29H		; MOTOR SPEED (INT of 0-9)
 MTRCNT	EQU	2AH		; Motor Control xxab xxxx (ab=00 free, ab=11 break, ab=10/01 rotation)
 RTMPD	EQU	2BH		; Received data temporal storage
+
+;	BITS
+LEDON1	EQU	7
+LEDON2	EQU	6
+MOTORA	EQU	5
+MOTORB	EQU	4
 
 MAIN
 	MOVLW	07H		; Turn comparators off and
@@ -177,8 +184,8 @@ END_OF_SEND
 	XORWF	RTMPD, F
 	BTFSS	STATUS, Z	; skip when data = "=" (break)
 	GOTO	RCH_IFPLUS
-	BSF	MTRCNT, 5	; set bit5 = 1
-	BSF	MTRCNT, 4	; set bit4 = 1
+	BSF	MTRCNT, MOTORB	; set bit5 = 1
+	BSF	MTRCNT, MOTORA	; set bit4 = 1
 	GOTO	ENDOFRECEIVE
 
 RCH_IFPLUS
@@ -186,8 +193,8 @@ RCH_IFPLUS
 	XORWF	RTMPD, F
 	BTFSS	STATUS, Z	; skip if received data = '+'
 	GOTO	RCH_IFMINUS
-	BCF	MTRCNT, 5	; set bit5 = 0
-	BSF	MTRCNT, 4	; set bit4 = 1
+	BCF	MTRCNT, MOTORB	; set bit5 = 0
+	BSF	MTRCNT, MOTORA	; set bit4 = 1
 	CLRF	MTRSPD		; clear the motor speed (avoid sudden reverse)
 	GOTO	ENDOFRECEIVE
 
@@ -196,8 +203,8 @@ RCH_IFMINUS
 	XORWF	RTMPD, F
 	BTFSS	STATUS, Z	; skip if received data = '-'
 	GOTO	RCV_DIGIT
-	BSF	MTRCNT, 5	; set bit5 = 1
-	BCF	MTRCNT, 4	; set bit4 = 0
+	BSF	MTRCNT, MOTORB	; set bit5 = 1
+	BCF	MTRCNT, MOTORA	; set bit4 = 0
 	CLRF	MTRSPD		; clear the motor speed (avoid sudden reverse)
 	GOTO	ENDOFRECEIVE
 
@@ -289,8 +296,8 @@ SKIPSW
 	GOTO	MAINLOOP
 
 	; TIMER IS OVER
-	BSF	PORTB, 6
-	BSF	PORTB, 7
+	BSF	PORTB, LEDON1
+	BSF	PORTB, LEDON2
 	GOTO    MAINLOOP
 
 ; ROTATION DETECTED -> INCREMENT DIRECTION COUNTER
@@ -298,14 +305,14 @@ SKIPSW
 ;		when the rotation is too fast.
 ;		So we count the rorations and send out one by one for one loop.
 ROTCW
-	BSF     PORTB, 6	; TURN ON/OFF THE INDICATOR LED
-	BCF     PORTB, 7
+	BSF     PORTB, LEDON1	; TURN ON/OFF THE INDICATOR LED
+	BCF     PORTB, LEDON2
 	INCF	DIRC, F		; COUNT UP DIR COUNTER
 	GOTO    RESETTIMER
 
 ROTCCW
-	BSF     PORTB, 7	; TURN ON/OFF THE INDICATOR LED
-	BCF     PORTB, 6
+	BSF     PORTB, LEDON1	; TURN ON/OFF THE INDICATOR LED
+	BCF     PORTB, LEDON2
 	DECF	DIRC, F		; COUNT DOWN DIR COUNTER
 	GOTO    RESETTIMER
 
