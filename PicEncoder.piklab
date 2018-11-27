@@ -1,0 +1,11 @@
+<!DOCTYPE piklab>
+<piklab>
+  <general>
+    <device>16F648A</device>
+    <tool>boostbasic16</tool>
+    <programmer>psp</programmer>
+    <files>
+      <item>encoder_and_motor.asm</item>
+    </files>
+  </general>
+</piklab>
