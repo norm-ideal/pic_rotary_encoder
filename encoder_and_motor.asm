@@ -73,10 +73,10 @@ MTRCNT	EQU	2AH		; Motor Control xxab xxxx (ab=00 free, ab=11 break, ab=10/01 rot
 RTMPD	EQU	2BH		; Received data temporal storage
 
 ;	BITS
-LEDON1	EQU	7
-LEDON2	EQU	6
-MOTORA	EQU	5
-MOTORB	EQU	4
+LEDON1	EQU	5
+LEDON2	EQU	4
+MOTORA	EQU	7
+MOTORB	EQU	6
 
 MAIN
 	MOVLW	07H		; Turn comparators off and
@@ -181,7 +181,7 @@ END_OF_SEND
 ; start the CHECK
 ; candidates are "="(break), "+"(positive rot), "-"(negative rot), "[0-9]"(speed)
 	MOVLW	'='
-	XORWF	RTMPD, F
+	XORWF	RTMPD, W 
 	BTFSS	STATUS, Z	; skip when data = "=" (break)
 	GOTO	RCH_IFPLUS
 	BSF	MTRCNT, MOTORB	; set bit5 = 1
@@ -190,7 +190,7 @@ END_OF_SEND
 
 RCH_IFPLUS
 	MOVLW	'+'
-	XORWF	RTMPD, F
+	XORWF	RTMPD, W 
 	BTFSS	STATUS, Z	; skip if received data = '+'
 	GOTO	RCH_IFMINUS
 	BCF	MTRCNT, MOTORB	; set bit5 = 0
@@ -200,7 +200,7 @@ RCH_IFPLUS
 
 RCH_IFMINUS
 	MOVLW	'-'
-	XORWF	RTMPD, F
+	XORWF	RTMPD, W
 	BTFSS	STATUS, Z	; skip if received data = '-'
 	GOTO	RCV_DIGIT
 	BSF	MTRCNT, MOTORB	; set bit5 = 1
@@ -311,8 +311,8 @@ ROTCW
 	GOTO    RESETTIMER
 
 ROTCCW
-	BSF     PORTB, LEDON1	; TURN ON/OFF THE INDICATOR LED
-	BCF     PORTB, LEDON2
+	BCF     PORTB, LEDON1	; TURN ON/OFF THE INDICATOR LED
+	BSF     PORTB, LEDON2
 	DECF	DIRC, F		; COUNT DOWN DIR COUNTER
 	GOTO    RESETTIMER
 
