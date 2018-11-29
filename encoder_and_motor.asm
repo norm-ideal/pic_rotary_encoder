@@ -77,6 +77,7 @@ LEDON1	EQU	5
 LEDON2	EQU	4
 MOTORA	EQU	7
 MOTORB	EQU	6
+motormask	EQU	b'00111111'
 
 MAIN
 	MOVLW	07H		; Turn comparators off and
@@ -181,7 +182,7 @@ END_OF_SEND
 ; start the CHECK
 ; candidates are "="(break), "+"(positive rot), "-"(negative rot), "[0-9]"(speed)
 	MOVLW	'='
-	XORWF	RTMPD, W 
+	XORWF	RTMPD, W
 	BTFSS	STATUS, Z	; skip when data = "=" (break)
 	GOTO	RCH_IFPLUS
 	BSF	MTRCNT, MOTORB	; set bit5 = 1
@@ -190,7 +191,7 @@ END_OF_SEND
 
 RCH_IFPLUS
 	MOVLW	'+'
-	XORWF	RTMPD, W 
+	XORWF	RTMPD, W
 	BTFSS	STATUS, Z	; skip if received data = '+'
 	GOTO	RCH_IFMINUS
 	BCF	MTRCNT, MOTORB	; set bit5 = 0
@@ -220,7 +221,7 @@ ENDOFRECEIVE
 
 ; begin set motor
 	MOVFW	PORTB
-	ANDLW	b'11001111'
+	ANDLW	motormask	; b'11001111' for Final version, b'00111111' for Testing
 	IORWF	MTRCNT, W
 	MOVWF	PORTB
 
