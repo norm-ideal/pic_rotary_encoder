@@ -2,10 +2,11 @@
 <piklab>
   <general>
     <device>16F648A</device>
-    <tool>boostbasic16</tool>
+    <tool>gputils</tool>
     <programmer>psp</programmer>
     <files>
       <item>encoder_and_motor.asm</item>
     </files>
   </general>
+  <editors/>
 </piklab>
