@@ -73,11 +73,11 @@ MTRCNT	EQU	2AH		; Motor Control xxab xxxx (ab=00 free, ab=11 break, ab=10/01 rot
 RTMPD	EQU	2BH		; Received data temporal storage
 
 ;	BITS
-LEDON1	EQU	5
-LEDON2	EQU	4
-MOTORA	EQU	7
-MOTORB	EQU	6
-motormask	EQU	b'00111111'
+LEDON1	EQU	7
+LEDON2	EQU	6
+MOTORA	EQU	5
+MOTORB	EQU	4
+motormask	EQU	b'11001111'
 
 MAIN
 	MOVLW	07H		; Turn comparators off and
