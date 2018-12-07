@@ -155,7 +155,17 @@ MAINLOOP
 	GOTO	SENDPLUS
 
 SENDMINUS			; SEND B, INCREMENT DIR
-	INCF	DIRC, F
+	MOVLW	10
+	ADDWF	DIRC, W		; dirc+10 -> W, set carry(**POSITIVE**)
+	BTFSS	STATUS, C	; if carry(-10<dirc), skip
+	GOTO	SENDM10		; here, dirc<-10, so send -10 CODE
+
+	INCF	DIRC, F		; just increment one
+	MOVLW	'b'
+	GOTO	SENDWREG
+
+SENDM10
+	MOVWF	DIRC		; W(dirc+10) -> DIRC
 	MOVLW	'B'
 	GOTO	SENDWREG
 
@@ -163,9 +173,9 @@ SENDPLUS			; SEND A, DECREMENT DIR
 	MOVLW	10
 	SUBWF	DIRC, W		; dirc-10 -> W, set borrow(**NEGATIVE**)
 	BTFSC	STATUS, C	; if borrow(dirc<10), skip
-	GOTO	SENDP10
+	GOTO	SENDP10		; here, dirc>10, so send +10 code
 
-	DECF	DIRC, F
+	DECF	DIRC, F		; just decrement one
 	MOVLW	'a'
 	GOTO	SENDWREG
 
