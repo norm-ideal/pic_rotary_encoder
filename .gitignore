@@ -6,6 +6,7 @@
 
 # Compiled files
 *.[Hh][Ee][Xx]
+*.[Cc][Oo][Dd]
 
 # Debug files
 *.cof
