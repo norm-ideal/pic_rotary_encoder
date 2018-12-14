@@ -71,6 +71,8 @@ DIRC	EQU	28H		; DIRECTION COUNTER (*SIGNED* INT)
 MTRSPD	EQU	29H		; MOTOR SPEED (INT of 0-9)
 MTRCNT	EQU	2AH		; Motor Control xxab xxxx (ab=00 free, ab=11 break, ab=10/01 rotation)
 RTMPD	EQU	2BH		; Received data temporal storage
+BRKLVL	EQU	2CH		; Brake Force 0=free, 0ffh=full
+BRKCNT	EQU	2DH		; Brake Counter
 
 ;	BITS
 LEDON1	EQU	7
@@ -78,6 +80,7 @@ LEDON2	EQU	6
 MOTORA	EQU	5
 MOTORB	EQU	4
 motormask	EQU	b'11001111'
+motorbreak	EQU	b'00110000'
 
 MAIN
 	MOVLW	07H		; Turn comparators off and
@@ -200,6 +203,7 @@ END_OF_SEND
 	MOVWF	RTMPD		; to RTMPD
 
 	CLRF	MTRSPD		; if something is sent, clear the motorspeed
+	CLRF	MTRCNT		; and set motor free
 
 ; start the CHECK
 ; candidates are "="(break), "+"(positive rot), "-"(negative rot), "[0-9]"(speed)
@@ -207,8 +211,24 @@ END_OF_SEND
 	XORWF	RTMPD, W
 	BTFSS	STATUS, Z	; skip when data = "=" (break)
 	GOTO	RCH_IFPLUS
-	BSF	MTRCNT, MOTORB	; set bit5 = 1
-	BSF	MTRCNT, MOTORA	; set bit4 = 1
+
+	; SUBPROCEDURE PRESENT Brake
+BRAKE
+	DECFSZ	BRKCNT
+	GOTO	BRKUPD
+	CLRF	BRKCNT
+	GOTO	BRAKEEND
+
+BRKUPD
+	MOVFW	BRKCNT
+	SUBWF	BRKLVL		; Brake_Level - Brake_Counter
+	MOVLW	00H		; does not affect any FLAGS
+	BTFSC	STATUS, C	; CARRY IS NEGATIVE LOGIC. C is set = Level>Counter = Brake ON
+	MOVLW	motorbreak
+	MOVWF	MTRCNT
+BRAKEEND
+	; SUBPROCEDURE END
+
 	GOTO	ENDOFRECEIVE
 
 RCH_IFPLUS
@@ -385,6 +405,7 @@ TURNCHECK
 	RETLW   1               ; 1110
 	RETLW   0               ; 1111
 ; END TURNCHECK
+
 
 ; PROCEDURE WAIT FOR 0FFH LOOPS
 WAIT
