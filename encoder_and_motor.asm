@@ -247,7 +247,7 @@ RCV_DIGIT
 	MOVWF	MTRSPD		; set it to motor speed
 	MOVWF	BRKLVL		; and to brake level
 	BCF	STATUS, C	; clear CARRY
-	RLF	BRKLVL, 4	; Brake level *= 16
+	SWAPF	BRKLVL, F	; Brake level *= 16
 
 	IORWF	MTRSPD, W	; check if motor_speed is 0
 	BTFSS	STATUS, Z	; if it is 0
@@ -352,9 +352,9 @@ SKIPSW
 	GOTO    MAINLOOP
 
 ; ROTATION DETECTED -> INCREMENT DIRECTION COUNTER
-; �@Note:	If the rotation charactor is sent directly, it drops some characters
+; �@Note:	If the rotation character is sent directly, it drops some characters
 ;		when the rotation is too fast.
-;		So we count the rorations and send out one by one for one loop.
+;		So we count the rotations and send out one by one for one loop.
 ROTCW
 	BSF     PORTB, LEDON1	; TURN ON/OFF THE INDICATOR LED
 	BCF     PORTB, LEDON2
