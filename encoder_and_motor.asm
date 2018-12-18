@@ -73,6 +73,7 @@ MTRCNT	EQU	2AH		; Motor Control xxab xxxx (ab=00 free, ab=11 break, ab=10/01 rot
 RTMPD	EQU	2BH		; Received data temporal storage
 BRKLVL	EQU	2CH		; Brake Force 0=free, 0ffh=full
 BRKCNT	EQU	2DH		; Brake Counter
+BRKFLG	EQU	2EH		; Brake Flag (0 : free, 1 : brake)
 
 ;	BITS
 LEDON1	EQU	7
@@ -135,6 +136,9 @@ MAIN
 	MOVLW	B'00001100'
 	MOVWF	LASTSW
 	CLRF	DIRC
+	CLRF	BRKLVL
+	CLRF	BRKCNT
+	CLRF	BRKFLG
 ; END INITIALISATION
 
 ; MAIN LOOP
@@ -212,23 +216,7 @@ END_OF_SEND
 	BTFSS	STATUS, Z	; skip when data = "=" (break)
 	GOTO	RCH_IFPLUS
 
-	; SUBPROCEDURE PRESENT Brake
-BRAKE
-	DECFSZ	BRKCNT
-	GOTO	BRKUPD
-	CLRF	BRKCNT
-	GOTO	BRAKEEND
-
-BRKUPD
-	MOVFW	BRKCNT
-	SUBWF	BRKLVL		; Brake_Level - Brake_Counter
-	MOVLW	00H		; does not affect any FLAGS
-	BTFSC	STATUS, C	; CARRY IS NEGATIVE LOGIC. C is set = Level>Counter = Brake ON
-	MOVLW	motorbreak
-	MOVWF	MTRCNT
-BRAKEEND
-	; SUBPROCEDURE END
-
+	BSF	BRKFLG, 1
 	GOTO	ENDOFRECEIVE
 
 RCH_IFPLUS
@@ -239,6 +227,7 @@ RCH_IFPLUS
 	BCF	MTRCNT, MOTORB	; set bit5 = 0
 	BSF	MTRCNT, MOTORA	; set bit4 = 1
 	CLRF	MTRSPD		; clear the motor speed (avoid sudden reverse)
+	CLRF	BRKFLG
 	GOTO	ENDOFRECEIVE
 
 RCH_IFMINUS
@@ -249,24 +238,43 @@ RCH_IFMINUS
 	BSF	MTRCNT, MOTORB	; set bit5 = 1
 	BCF	MTRCNT, MOTORA	; set bit4 = 0
 	CLRF	MTRSPD		; clear the motor speed (avoid sudden reverse)
+	CLRF	BRKFLG
 	GOTO	ENDOFRECEIVE
 
 RCV_DIGIT
 	MOVLW	'0'
 	SUBWF	RTMPD, W	; W = ['0'-'9'] - '0'
 	MOVWF	MTRSPD		; set it to motor speed
-	IORWF	MTRSPD, W		; check if it is 0
-	BTFSC	STATUS, Z	; if it is 0
+	MOVWF	BRKLVL		; and to brake level
+	BCF	STATUS, C	; clear CARRY
+	RLF	BRKLVL, 4	; Brake level *= 16
+
+	IORWF	MTRSPD, W	; check if motor_speed is 0
+	BTFSS	STATUS, Z	; if it is 0
+	GOTO	ENDOFRECEIVE
 	CLRF	MTRCNT		; set the motor free
+	CLRF	BRKFLG		; reset BrakeFlag
 
 ENDOFRECEIVE
 
 ; begin set motor
+	BTFSS	BRKFLG, 1	; if brake_mode, skip into brake SETTINGS
+	GOTO	MOTORSET
+BRAKE
+	DECF	BRKCNT, F
+	MOVFW	BRKCNT
+	SUBWF	BRKLVL		; Brake_Level - Brake_Counter
+	MOVLW	00H		; does not affect any FLAGS
+	BTFSC	STATUS, C	; CARRY IS NEGATIVE LOGIC. C is set = Level>Counter = Brake ON
+	MOVLW	motorbreak
+	MOVWF	MTRCNT
+BRAKEEND
+
+MOTORSET
 	MOVFW	PORTB
 	ANDLW	motormask	; b'11001111' for Final version, b'00111111' for Testing
 	IORWF	MTRCNT, W
 	MOVWF	PORTB
-
 ENDOFMOTORSET
 
 
