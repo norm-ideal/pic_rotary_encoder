@@ -4,7 +4,7 @@
 ; CONNECTION
 ;	A0, A1	: ENCODER INPUT
 ;	A2	: RESET ENCODER COUNT SW (NEGATIVE)
-;	A3	: MISSLE SHOT SW (NEGATIVE)
+;	A3	: MISSILE SHOT SW (NEGATIVE)
 ;	B1, B2	: SERIAL PORT
 ;	B3      : PWM
 ;	B4, B5  : MOTOR CONTROL
@@ -324,9 +324,9 @@ SKIPSW
 	GOTO    MAINLOOP
 
 ; ROTATION DETECTED -> INCREMENT DIRECTION COUNTER
-; �@Note:	If the rotation charactor is sent directly, it drops some characters
+; �@Note:	If the rotation character is sent directly, it drops some characters
 ;		when the rotation is too fast.
-;		So we count the rorations and send out one by one for one loop.
+;		So we count the rotations and send out one by one for one loop.
 ROTCW
 	BSF     PORTB, LEDON1	; TURN ON/OFF THE INDICATOR LED
 	BCF     PORTB, LEDON2
