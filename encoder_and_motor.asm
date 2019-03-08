@@ -257,7 +257,7 @@ RCV_ALPHA
 	BTFSS	STATUS, C	; if carry=1, as CARRY IS NEGATIVE, substraction was OK, go to handle alpha, if not, go to check Digits
 	GOTO	RCV_DIGIT
 	
-	CALL	SENDW
+	ANDLW	b'00000111'	; limit the number to 0-7
 	
 	MOVWF	CSTAT		; store it to CurrentStatus
 	GOTO	ENDOFRECEIVE
@@ -449,7 +449,7 @@ SLOOP	DECFSZ	SLEEPC, F
 
 ; STATE BASED PROCEDURES
 STATEPROCS
-	RETURN
+	MOVFW	CSTAT
 	ADDWF	PCL, F
 	GOTO	STATE0
 	GOTO	STATE1
@@ -458,21 +458,22 @@ STATEPROCS
 	GOTO	STATE4
 	GOTO	STATE5
 	GOTO	STATE6
+	GOTO	STATE7
 
 STATE0	; A
 	MOVWF	'0'
 	CALL	SENDW
-	BSF	MTRCNT, MOTORB	; set bit5 = 1
 	BSF	MTRCNT, MOTORA	; set bit4 = 1
+	BSF	MTRCNT, MOTORB	; set bit5 = 1
 	RETURN
 
 STATE1	; B
 	MOVWF	'1'
 	CALL	SENDW
-	BSF	MTRCNT, MOTORB	; set bit5 = 1
-	BCF	MTRCNT, MOTORA	; set bit4 = 0
-	BTFSS	PORTA, 3	; is set, need to pull, if clear, no need to pull
 	BSF	MTRCNT, MOTORA	; set bit4 = 1
+	BCF	MTRCNT, MOTORB	; set bit5 = 0
+	BTFSS	PORTA, 3	; is set, need to pull, if clear, no need to pull
+	BSF	MTRCNT, MOTORB	; set bit4 = 1
 	RETURN
 
 STATE2
@@ -480,6 +481,7 @@ STATE3
 STATE4
 STATE5
 STATE6
+STATE7
 	RETURN
 
 	
