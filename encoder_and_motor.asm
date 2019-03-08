@@ -461,24 +461,37 @@ STATEPROCS
 	GOTO	STATE7
 
 STATE0	; A
-	MOVWF	'0'
-	CALL	SENDW
 	BSF	MTRCNT, MOTORA	; set bit4 = 1
 	BSF	MTRCNT, MOTORB	; set bit5 = 1
 	RETURN
 
 STATE1	; B
-	MOVWF	'1'
-	CALL	SENDW
 	BSF	MTRCNT, MOTORA	; set bit4 = 1
 	BCF	MTRCNT, MOTORB	; set bit5 = 0
 	BTFSS	PORTA, 3	; is set, need to pull, if clear, no need to pull
-	BSF	MTRCNT, MOTORB	; set bit4 = 1
+	BSF	MTRCNT, MOTORB	; set bit5 = 1
 	RETURN
 
-STATE2
-STATE3
-STATE4
+STATE2	; C
+	BSF	MTRCNT, MOTORA	; set bit4 = 1
+	BCF	MTRCNT, MOTORB	; set bit5 = 0
+	BTFSS	PORTA, 3	; is set, need to pull, if clear, set brake
+	BCF	MTRCNT, MOTORA	; set bit4 = 0
+		
+	RETURN
+	
+STATE3	; D
+	BSF	MTRCNT, MOTORA	; set bit4 = 1
+	BSF	MTRCNT, MOTORB	; set bit5 = 1
+	RETURN
+	
+STATE4	; E
+	BSF	MTRCNT, MOTORA	; set bit4 = 1
+	BCF	MTRCNT, MOTORB	; set bit5 = 0
+	BTFSS	PORTA, 3	; is set, need to pull, if clear, set brake
+	CLRF	CSTAT		; return to initial state if tension is given
+	RETURN
+	
 STATE5
 STATE6
 STATE7
